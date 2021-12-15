@@ -27,20 +27,19 @@ def get_label_from_filename(img_filename):
 def create_labels_csv(is_train = True):
 	file_label_df = pd.DataFrame(columns = ['Filename', 'Label'])
 	if is_train is True:
-		img_dir = pathlib.Path("./IAM/small_lines/train/")
+		img_dir = pathlib.Path("./IAM/lines_dataset/train/")
 	else:
-	 	img_dir = pathlib.Path("./IAM/small_lines/test/")
+	 	img_dir = pathlib.Path("./IAM/lines_dataset/test/")
 	
 	xml_dir = pathlib.Path("./IAM/xml/")
-	pdb.set_trace()
 	for img_file in img_dir.iterdir():
 		label_string = get_label_from_filename(img_file.name)
 		file_label_df = file_label_df.append({'Filename':img_file.name, 'Label': label_string}, ignore_index=True)
 
 	if is_train is True:
-		file_label_df.to_csv('small_trainLabels.csv', index=False)
+		file_label_df.to_csv('trainLabels.csv', index=False)
 	else:
-		file_label_df.to_csv('small_testLabels.csv', index=False)
+		file_label_df.to_csv('testLabels.csv', index=False)
 
 
 def main():

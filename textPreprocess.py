@@ -3,9 +3,9 @@ import pandas as pd
 import pdb
 from tensorflow.keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+import numpy as np
 
 def get_tokenizer():
-	pdb.set_trace()
 	train_labels=pd.read_csv("./small_trainLabels.csv", dtype=str)
 	tk = Tokenizer(num_words=None, char_level=True, oov_token='UNK')
 	tk.fit_on_texts(train_labels['Label'])
@@ -24,7 +24,7 @@ def get_tokenizer():
 	tk.word_index[tk.start_token] = max(char_dict.values()) + 2
 	tk.word_index[tk.end_token] = max(char_dict.values()) + 3	
 
-	processed_labels = preprocess_labels(train_labels['Label'], tk)
+	#processed_labels = preprocess_labels(train_labels['Label'], tk)
 	return tk
 
 def get_alphabet(train_labels):
@@ -51,14 +51,11 @@ def preprocess_labels(label_batch, tk, max_len = 100):
 		#while len(label) < max_len:
 		#	label = label + tk.pad_token
 		padded_labels.append(label[:100])
-	pdb.set_trace()
+
 	padded_labels = tk.texts_to_sequences(padded_labels)
 
 	# Padding
 	padded_labels = pad_sequences(padded_labels, maxlen=100, padding='post')
-	
-	# Convert to numpy array
-	padded_labels = np.array(padded_labels, dtype='float32')
 	
 	return padded_labels
 
