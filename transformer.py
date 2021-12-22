@@ -3,8 +3,7 @@ from DecoderAttn import create_padding_mask, create_look_ahead_mask
 from VFEncoder import VFEncoder
 from text_transcriber import Transcriber
 import pdb
-from tensorflow.python.client import device_lib 
-print(device_lib.list_local_devices())
+
 
 def loss_function(real, pred):
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')

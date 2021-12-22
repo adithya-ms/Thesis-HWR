@@ -7,8 +7,7 @@ from DecoderAttn import create_padding_mask
 
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
-from tensorflow.python.client import device_lib 
-print(device_lib.list_local_devices())
+
 
 
 class VFEncoder(tf.keras.layers.Layer):

@@ -3,8 +3,7 @@ from tensorflow.keras.applications.resnet50 import ResNet50
 from DecoderAttn import DecoderAttn
 from positional_embeddings import positional_encoding
 import pdb
-from tensorflow.python.client import device_lib 
-print(device_lib.list_local_devices())
+
 
 class Transcriber(tf.keras.layers.Layer):
 	def __init__(self, num_layers, d_model, num_heads, dff, maximum_position_encoding, rate=0.1):

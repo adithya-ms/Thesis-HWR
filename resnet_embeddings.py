@@ -15,7 +15,6 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def build_resnet():
-    pdb.set_trace()
     input_shape = (50,200,3)
     train_generator, valid_generator, test_generator = dataloader()
     inputs = keras.Input(shape=input_shape)

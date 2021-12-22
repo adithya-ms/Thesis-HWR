@@ -1,7 +1,6 @@
 import tensorflow as tf
 import pdb
-from tensorflow.python.client import device_lib 
-print(device_lib.list_local_devices())
+
 
 def scaled_dot_product_attention(q, k, v, mask):
 	"""Calculate the attention weights.

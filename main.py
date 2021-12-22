@@ -4,8 +4,12 @@ from dataloader import dataloader
 import pdb
 import time
 from textPreprocess import get_tokenizer, preprocess_labels
+import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 from tensorflow.python.client import device_lib 
 print(device_lib.list_local_devices())
+import datetime
+tf.debugging.experimental.enable_dump_debug_info('logs/gradient_tape', tensor_debug_mode="FULL_HEALTH", circular_buffer_size=-1)
 
 train_step_signature = [
 	tf.TensorSpec(shape=(None, None, None,None), dtype=tf.float32),
@@ -27,12 +31,16 @@ def train_step(inp, tar):
 	train_loss(loss)
 	train_accuracy(accuracy_function(tar_real, predictions))
 
+	return gradients
+
 num_layers = 4
 d_model = 1024
 dff = 512
 num_heads = 8
 dropout_rate = 0.1
-input_shape = (100,400,3)
+input_shape = (32,100,3)
+num_epochs = 10
+batch_size = 8
 
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
@@ -61,7 +69,12 @@ ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 #	ckpt.restore(ckpt_manager.latest_checkpoint)
 #	print('Latest checkpoint restored!!')
 
-EPOCHS = 20
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
+test_log_dir = 'logs/gradient_tape/' + current_time + '/test'
+train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+
 
 # The @tf.function trace-compiles train_step into a TF graph for faster
 # execution. The function specializes to the precise shape of the argument
@@ -69,24 +82,36 @@ EPOCHS = 20
 # batch sizes (the last batch is smaller), use input_signature to specify
 # more generic shapes.
 
-train_generator, valid_generator, test_generator = dataloader(input_shape)
-for epoch in range(EPOCHS):
+train_generator, valid_generator, test_generator = dataloader(input_shape, batch_size)
+for epoch in range(num_epochs):
 	start = time.time()
 
 	train_loss.reset_states()
 	train_accuracy.reset_states()
 	tokenizer = get_tokenizer()
-	# inp -> portuguese, tar -> english
+
 	step_size_train = train_generator.n//train_generator.batch_size
 	for (batch, (inp, tar)) in enumerate(train_generator):
 		tar = preprocess_labels(tar, tokenizer, max_len = 100)
-		train_step(inp, tar)
+		tf.summary.trace_on(graph=True, profiler=True)
+
+		gradients = train_step(inp, tar)
+		with train_summary_writer.as_default():
+			tf.summary.trace_export(name="my_func_trace", step=0,profiler_outdir=train_log_dir)
 
 		if batch % 5 == 0:
 			print(f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
 
 		if batch > step_size_train:
 			break
+	with train_summary_writer.as_default():
+		tf.summary.scalar('loss', train_loss.result(), step=epoch)
+		tf.summary.scalar('accuracy', train_accuracy.result(), step=epoch)
+		l2_norm = lambda t: tf.sqrt(tf.reduce_sum(tf.pow(t, 2)))
+		for gradient, variable in zip(gradients, transformer.trainable_variables):
+			tf.summary.histogram("gradients/" + variable.name, l2_norm(gradient), step = 0)
+			tf.summary.histogram("variables/" + variable.name, l2_norm(variable), step = 0)
+
 	if (epoch + 1) % 5 == 0:
 		ckpt_save_path = ckpt_manager.save()
 		print(f'Saving checkpoint for epoch {epoch+1} at {ckpt_save_path}')
