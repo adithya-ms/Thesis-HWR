@@ -3,18 +3,25 @@ from DecoderAttn import create_padding_mask, create_look_ahead_mask
 from VFEncoder import VFEncoder
 from text_transcriber import Transcriber
 import pdb
+#from error_metrics import WERMetric, CERMetric
 
 
 def loss_function(real, pred):
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
+	#wer_object = WERMetric()
+	#cer_object = CERMetric()
+
 	mask = tf.math.logical_not(tf.math.equal(real, 0))
 	loss_ = loss_object(real, pred)
 
 	mask = tf.cast(mask, dtype=loss_.dtype)
 	loss_ *= mask
-
+	#pdb.set_trace()
+	#wer_object.update_state(real, pred)
+	#cer_object.update_state(real, pred)
+	#batch_cer = cer_object.result()
+	#batch_wer = wer_object.result()
 	return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
-
 
 def accuracy_function(real, pred):
 	accuracies = tf.equal(real, tf.argmax(pred, axis=2))
@@ -28,13 +35,13 @@ def accuracy_function(real, pred):
 
 
 class Transformer(tf.keras.Model):
-	def __init__(self, num_layers, d_model, num_heads, dff, pe_input, pe_target, input_shape, rate=0.1):
+	def __init__(self, num_layers, d_model, num_heads, dff, pe_input, pe_target, input_shape, vocab_size, rate=0.1):
 		super().__init__()
 		self.encoder = VFEncoder(num_layers, d_model, num_heads, dff,pe_input, input_shape, rate)
 
-		self.decoder = Transcriber(num_layers, d_model, num_heads, dff, pe_target, rate)
+		self.decoder = Transcriber(num_layers, d_model, num_heads, dff, pe_target, vocab_size, rate)
 
-		self.final_layer = tf.keras.layers.Softmax()
+		self.final_layer = tf.keras.layers.Dense(vocab_size, activation='softmax')
 
 	def call(self, inputs, training):
 		# Keras models prefer if you pass all your inputs in the first argument

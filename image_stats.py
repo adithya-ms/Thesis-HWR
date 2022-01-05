@@ -16,7 +16,6 @@ def main():
 				image_sizes[batch][i] = im.size[i]
 		batch += 1
 
-	pdb.set_trace()
 	plt.hist(image_sizes[:,0], bins=100)
 	plt.gca().set(title='Lengths Histogram', ylabel='Frequency');
 	plt.show()

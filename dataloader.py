@@ -15,8 +15,15 @@ def dataloader(input_shape, batch_size):
 	traindf=pd.read_csv("./small_trainLabels.csv", dtype=str)
 	testdf=pd.read_csv("./testLabels.csv", dtype=str)
 
-	datagen=tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255.,validation_split=0.25)
-	train_generator=datagen.flow_from_dataframe(dataframe=traindf,
+	train_labels = tf.data.Dataset.from_tensor_slices(dict(traindf))
+	test_labels = tf.data.Dataset.from_tensor_slices(dict(testdf))
+	datagen=tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255.,
+															validation_split=0.25,
+															rotation_range=20,
+															height_shift_range=0.2,  
+															shear_range=0.2, 
+															zoom_range=0.2)
+	train_generator=datagen.flow_from_dataframe(traindf,
 												directory="../datasets/small_lines/train/",
 												x_col="Filename",
 												y_col="Label",
@@ -28,7 +35,7 @@ def dataloader(input_shape, batch_size):
 												#color_mode = "grayscale",
 												target_size=input_shape[:-1])
 	
-	valid_generator=datagen.flow_from_dataframe(dataframe=traindf,
+	valid_generator=datagen.flow_from_dataframe(traindf,
 												directory="./IAM/lines_dataset/train/",
 												x_col="Filename",
 												y_col="Label",
@@ -42,7 +49,7 @@ def dataloader(input_shape, batch_size):
 	
 	test_datagen=tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255.)
 	
-	test_generator=test_datagen.flow_from_dataframe(dataframe=testdf,
+	test_generator=test_datagen.flow_from_dataframe(testdf,
 													directory="./IAM/lines_dataset/test/",
 													x_col="Filename",
 													y_col=None,

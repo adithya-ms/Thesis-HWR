@@ -6,13 +6,13 @@ import pdb
 
 
 class Transcriber(tf.keras.layers.Layer):
-	def __init__(self, num_layers, d_model, num_heads, dff, maximum_position_encoding, rate=0.1):
+	def __init__(self, num_layers, d_model, num_heads, dff, maximum_position_encoding, vocab_size, rate=0.1):
 		super(Transcriber, self).__init__()
 
 		self.d_model = d_model
 		self.num_layers = num_layers
 
-		self.embedding = tf.keras.layers.Embedding(100, d_model)
+		self.embedding = tf.keras.layers.Embedding(vocab_size, d_model)
 		self.dense = tf.keras.layers.Dense(d_model)
 		self.pos_encoding = positional_encoding(maximum_position_encoding, d_model)
 
@@ -23,7 +23,6 @@ class Transcriber(tf.keras.layers.Layer):
 
 		seq_len = tf.shape(x)[1]
 		attention_weights = {}
-
 		x = self.embedding(x)
 		#x = self.dense(x)  # (batch_size, target_seq_len, d_model)
 		x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
