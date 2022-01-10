@@ -87,7 +87,7 @@ def build_tokenizer():
 	tf.saved_model.save(tokenizers, 'bert-en-subword-tokenizer')	
 
 def create_alphabet_file():
-	pdb.set_trace()
+
 	train_labels = pd.read_csv("./trainLabels.csv", dtype=str)
 	train_labels = train_labels["Label"]
 	train_labels = tf.data.Dataset.from_tensor_slices(train_labels)
@@ -166,7 +166,6 @@ def add_start_end(ragged):
 def preprocess_labels(label_batch, tk, max_len = 100):
 	# Convert string to index
 	label_batch = tk.en.tokenize(label_batch).to_tensor()
-	
 	return label_batch
 
 def main():

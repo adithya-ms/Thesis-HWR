@@ -11,9 +11,9 @@ import pandas as pd
 from xml_processing import get_label_from_filename
 
 def dataloader(input_shape, batch_size):
-	#pdb.set_trace()
-	traindf=pd.read_csv("./small_trainLabels.csv", dtype=str)
-	testdf=pd.read_csv("./testLabels.csv", dtype=str)
+
+	traindf=pd.read_csv("./IAM/small_trainLabels.csv", dtype=str)
+	testdf=pd.read_csv("./IAM/testLabels.csv", dtype=str)
 
 	train_labels = tf.data.Dataset.from_tensor_slices(dict(traindf))
 	test_labels = tf.data.Dataset.from_tensor_slices(dict(testdf))
@@ -36,7 +36,7 @@ def dataloader(input_shape, batch_size):
 												target_size=input_shape[:-1])
 	
 	valid_generator=datagen.flow_from_dataframe(traindf,
-												directory="./IAM/lines_dataset/train/",
+												directory="../datasets/small_lines/train/",
 												x_col="Filename",
 												y_col="Label",
 												subset="validation",

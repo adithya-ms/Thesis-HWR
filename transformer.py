@@ -3,25 +3,27 @@ from DecoderAttn import create_padding_mask, create_look_ahead_mask
 from VFEncoder import VFEncoder
 from text_transcriber import Transcriber
 import pdb
-#from error_metrics import WERMetric, CERMetric
+from error_metrics import WERMetric, CERMetric
 
 
-def loss_function(real, pred):
-	loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
-	#wer_object = WERMetric()
-	#cer_object = CERMetric()
+def loss_function(real, pred, cer_object, wer_object):
+	loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='none')
 
 	mask = tf.math.logical_not(tf.math.equal(real, 0))
-	loss_ = loss_object(real, pred)
+	
+	cer_object.reset_states()
+	cer_object.update_state(real, pred)
+	cer_loss = cer_object.result()
 
+	wer_object.reset_states()
+	wer_object.update_state(real, pred)
+	wer_loss = wer_object.result()
+	
+	loss_ = loss_object(real, pred)
 	mask = tf.cast(mask, dtype=loss_.dtype)
 	loss_ *= mask
-	#pdb.set_trace()
-	#wer_object.update_state(real, pred)
-	#cer_object.update_state(real, pred)
-	#batch_cer = cer_object.result()
-	#batch_wer = wer_object.result()
-	return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
+
+	return tf.reduce_sum(loss_)/tf.reduce_sum(mask), cer_loss, wer_loss
 
 def accuracy_function(real, pred):
 	accuracies = tf.equal(real, tf.argmax(pred, axis=2))
@@ -46,7 +48,7 @@ class Transformer(tf.keras.Model):
 	def call(self, inputs, training):
 		# Keras models prefer if you pass all your inputs in the first argument
 		inp, tar = inputs
-		#pdb.set_trace()
+
 		enc_padding_mask, look_ahead_mask, dec_padding_mask = self.create_masks(inp, tar)
 
 		enc_output = self.encoder(inp, training)  # (batch_size, inp_seq_len, d_model)
