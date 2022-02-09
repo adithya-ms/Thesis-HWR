@@ -52,11 +52,12 @@ def dataloader(input_shape, batch_size):
 	test_generator=test_datagen.flow_from_dataframe(testdf,
 													directory="./IAM/lines_dataset/test/",
 													x_col="Filename",
-													y_col=None,
+													y_col="Label",
+													subset="test",
 													batch_size=batch_size,
 													seed=42,
-													shuffle=False,
-													class_mode=None,
+													shuffle=True,
+													class_mode="raw",
 													#color_mode = "grayscale",
 													target_size=input_shape[:-1])
 

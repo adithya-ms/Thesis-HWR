@@ -3,14 +3,21 @@ from DecoderAttn import create_padding_mask, create_look_ahead_mask
 from VFEncoder import VFEncoder
 from text_transcriber import Transcriber
 import pdb
-from error_metrics import WERMetric, CERMetric
+import numpy as np
+import enchant
 
+def loss_function(real, pred, cer_object, wer_object, tokenizer):
+	real_text = tokenizer.en.detokenize(real)
+	pred_reduced = np.zeros((pred.shape[0], pred.shape[1]))
+	for row, line in enumerate(pred):
+		for col,word in enumerate(line):
+			pred_reduced[row][col] = np.argmax(word)
 
-def loss_function(real, pred, cer_object, wer_object):
+	pred_reduced = tf.convert_to_tensor(np.int64(pred_reduced))
+	pred_text = tokenizer.en.detokenize(pred_reduced)
 	loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False, reduction='none')
 
 	mask = tf.math.logical_not(tf.math.equal(real, 0))
-	
 	cer_object.reset_states()
 	cer_object.update_state(real, pred)
 	cer_loss = cer_object.result()
@@ -48,7 +55,7 @@ class Transformer(tf.keras.Model):
 	def call(self, inputs, training):
 		# Keras models prefer if you pass all your inputs in the first argument
 		inp, tar = inputs
-
+		
 		enc_padding_mask, look_ahead_mask, dec_padding_mask = self.create_masks(inp, tar)
 
 		enc_output = self.encoder(inp, training)  # (batch_size, inp_seq_len, d_model)

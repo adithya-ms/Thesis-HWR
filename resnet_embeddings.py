@@ -28,7 +28,7 @@ def build_resnet():
     features = model.predict(train_generator)
     features_reduce = features.squeeze()
     length, width, feature = features_reduce.shape[1::]
-    resnet_embeddings = features_reduce.reshape(-1,length*feature,width)
+    resnet_embeddings = tf.reshape(features_reduce,(-1,length*feature,width))
     
     
     fc1 = tf.keras.models.Sequential()

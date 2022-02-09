@@ -1,9 +1,7 @@
-from dataloader import dataloader
 import pandas as pd
 import pdb
 import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
 from tensorflow_text.tools.wordpiece_vocab import bert_vocab_from_dataset as bert_vocab
 import numpy as np
 import os
@@ -76,19 +74,20 @@ class CustomTokenizer(tf.Module):
 reserved_tokens=["[PAD]", "[UNK]", "[START]", "[END]"]
 bert_tokenizer_params=dict(lower_case=False)
 
-def build_tokenizer():
+def build_tokenizer(labels_path):
 
 	if not os.path.exists("vocab.txt"):
-		create_alphabet_file()
+		create_alphabet_file(labels_path)
 
 	tokenizers = tf.Module()
 	tokenizers.en = CustomTokenizer(reserved_tokens, 'vocab.txt')
 
 	tf.saved_model.save(tokenizers, 'bert-en-subword-tokenizer')	
 
-def create_alphabet_file():
+def create_alphabet_file(labels_path):
 
-	train_labels = pd.read_csv("./trainLabels.csv", dtype=str)
+	train_labels_path = os.path.join(labels_path, 'trainLabels.csv')
+	train_labels = pd.read_csv(train_labels_path)
 	train_labels = train_labels["Label"]
 	train_labels = tf.data.Dataset.from_tensor_slices(train_labels)
 
@@ -104,45 +103,6 @@ def write_vocab_file(filepath, vocab):
 		for token in vocab:
 			print(token, file=f)
 
-'''
-def get_tokenizer():
-	train_labels=pd.read_csv("./small_trainLabels.csv", dtype=str)
-	tk = Tokenizer(num_words=None, char_level=True, oov_token='UNK', lower=False)
-	tk.fit_on_texts(train_labels['Label'])
-	char_dict = get_alphabet(train_labels['Label'])
-	
-	# Use char_dict to replace the tk.word_index
-	tk.word_index = char_dict.copy()
-	
-	# Add 'UNK' to the vocabulary
-	tk.start_token = '<S>'
-	tk.end_token = '<E>'
-	tk.pad_token = '<P>'
-
-	tk.word_index[tk.oov_token] = max(char_dict.values()) + 1
-	#Add start and end tokens to the vocabulary:
-	tk.word_index[tk.start_token] = max(char_dict.values()) + 2
-	tk.word_index[tk.end_token] = max(char_dict.values()) + 3	
-
-	#processed_labels = preprocess_labels(train_labels['Label'], tk)
-	return tk
-
-def get_alphabet(train_labels):
-	alphabet = []
-	for label in train_labels:
-		for character in label:
-			if character in alphabet:
-				pass
-			else:
-				alphabet.append(character)
-
-	char_dict = {}
-	for i, char in enumerate(alphabet):
-	    char_dict[char] = i + 1
-
-	return char_dict
-
-'''
 def cleanup_text(reserved_tokens, token_txt):
 	# Drop the reserved tokens, except for "[UNK]".
 	bad_tokens = [re.escape(tok) for tok in reserved_tokens if tok != "[UNK]"]
@@ -169,7 +129,8 @@ def preprocess_labels(label_batch, tk, max_len = 100):
 	return label_batch
 
 def main():
-	tokenizer = build_tokenizer()
+	labels_path = "./IAM/complete_monk/"
+	tokenizer = build_tokenizer(labels_path)
 
 if __name__ == '__main__':
 	main()

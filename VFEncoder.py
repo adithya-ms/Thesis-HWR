@@ -35,10 +35,9 @@ class VFEncoder(tf.keras.layers.Layer):
 
 		# adding resnet features embedding and position encoding.
 		x = self.resnet50(x)  # (batch_size, input_seq_len, d_model)
-
 		length, width, feature = x.shape[1::]
-		x = x.reshape(-1,width,length*feature)
-
+		
+		x = tf.reshape(x,(-1,width,length*feature))
 		x = self.dense1(x)
 
 		x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))

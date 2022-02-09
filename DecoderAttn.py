@@ -1,6 +1,6 @@
 import tensorflow as tf
 from MultiheadAttention import MultiHeadAttention
-
+import pdb
 
 def point_wise_feed_forward_network(d_model, dff):
 	return tf.keras.Sequential([
