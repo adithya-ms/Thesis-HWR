@@ -1,0 +1,82 @@
+import tensorflow as tf
+from tensorflow.keras.applications.resnet50 import ResNet50
+from Attention_block import EncoderAttn
+import pdb
+from DecoderAttn import create_padding_mask
+import sys
+sys.path.append("..")
+from positional_embeddings import positional_encoding
+from sklearn.manifold import TSNE
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+#import HWRecognizer
+from tensorflow.python.ops.numpy_ops import np_config
+np_config.enable_numpy_behavior()
+
+
+
+class VFEncoder(tf.keras.layers.Layer):
+	def __init__(self, num_layers, d_model, num_heads, dff, maximum_position_encoding, input_shape, rate=0.1):
+		super(VFEncoder, self).__init__()
+
+		self.d_model = d_model
+		self.num_layers = num_layers
+		self.inp_shape = input_shape
+        
+		self.resnet50 = ResNet50(input_shape = self.inp_shape, weights='imagenet', pooling=max, include_top = False)
+		#self.resnet50.trainable = False
+		self.pos_encoding = positional_encoding(maximum_position_encoding, self.d_model)
+
+		self.attn_layers = [EncoderAttn(d_model, num_heads, dff, rate) for _ in range(num_layers)]
+
+		self.dense1 = tf.keras.layers.Dense(d_model)
+		self.dense2 = tf.keras.layers.Dense(d_model)
+		self.dense3 = tf.keras.layers.Dense(d_model)
+
+		self.layernorm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
+		self.dropout = tf.keras.layers.Dropout(rate)
+
+	def call(self, x, training):
+
+		# adding resnet features embedding and position encoding.
+		x = self.resnet50(x)  # (batch_size, input_seq_len, d_model)
+		#pdb.set_trace()
+		length, width, feature = x.shape[1::]
+		
+		x = tf.reshape(x,(-1,width,length*feature))
+		x = self.dense1(x)
+		
+		
+		#global fig, outer
+		#ax1 = plt.Subplot(fig, outer[0])
+
+		#ax1.boxplot(x.numpy()[0].transpose())
+		# tsne = TSNE(3, verbose=1)
+		# tsne_proj = tsne.fit_transform(x[0])
+		# # Plot those points as a scatter plot and label them based on the pred labels
+		# cmap = cm.get_cmap('tab20')
+		# fig, ax = plt.subplots(figsize=(8,8))
+		# num_categories = 19
+		# for lab in range(num_categories):
+		#     indices = test_predictions==lab
+		#     ax.scatter(tsne_proj[indices,0],tsne_proj[indices,1], c=np.array(cmap(lab)).reshape(1,4), label = lab ,alpha=0.5)
+		# ax.legend(fontsize='large', markerscale=2)
+		# plt.show()
+
+		x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
+
+		seq_len = x.shape[1]
+		x += self.pos_encoding[:, :seq_len, :]
+
+		x = self.dense2(x)
+		x = self.layernorm(x)
+
+		mask = create_padding_mask(x)
+		for i in range(self.num_layers):
+			x = self.attn_layers[i](x, training, mask)
+        
+		x = self.dense3(x)
+		x = self.dropout(x, training=training)
+
+		return x  # (batch_size, input_seq_len, d_model)
